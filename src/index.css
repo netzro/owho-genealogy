@@ -1,111 +1,50 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  color-scheme: light;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.45;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+body { margin: 0; background: #f6f4ef; color: #2b241a; }
+* { box-sizing: border-box; }
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+.wrap { max-width: 60rem; margin: 0 auto; padding: 1rem 1rem 3rem; }
+.center { max-width: 30rem; margin: 12vh auto; text-align: center; }
+
+header { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+header h1 { margin: 0.5rem 0; font-size: 1.5rem; }
+header .ghost { margin-left: auto; }
+
+.card {
+  background: #fff; border: 1px solid #e5ddcf; border-radius: 10px;
+  padding: 1rem 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+.people { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.9rem; }
+.person { text-align: center; }
+.person h3 { margin: 0.5rem 0 0.15rem; }
 
-body {
-  margin: 0;
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+.avatar { width: 5rem; height: 5rem; border-radius: 50%; object-fit: cover; margin: 0 auto; display: block; }
+.avatar.placeholder {
+  background: #d9c9a9; color: #6d5a2f; display: flex; align-items: center;
+  justify-content: center; font-size: 2rem; font-weight: 700;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
+.notes, .muted { color: #7a6f5c; font-size: 0.9rem; }
+.error { color: #b3261e; }
+.toast { background: #eef4e8; border: 1px solid #cfe3c0; border-radius: 8px; padding: 0.5rem 0.9rem; }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
+.stack { display: grid; gap: 0.6rem; }
+.row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+.links { list-style: none; padding: 0; margin: 0.5rem 0 0; font-size: 0.9rem; }
+.links li { display: flex; gap: 0.4rem; align-items: center; padding: 0.25rem 0; border-top: 1px solid #efe8db; }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+input, select, textarea, button {
+  font: inherit; border-radius: 8px; border: 1px solid #d6ccb9;
+  padding: 0.5rem 0.7rem; background: #fff; color: inherit;
 }
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-}
+button { cursor: pointer; background: #3f6f52; color: #fff; border-color: #3f6f52; }
+button:disabled { opacity: 0.6; cursor: default; }
+button.ghost { background: transparent; color: #3f6f52; border-color: #c8bda6; }
+button.tiny { padding: 0.15rem 0.5rem; font-size: 0.8rem; }
+button.danger { color: #b3261e; }
+.file { font-size: 0.85rem; color: #5c5342; }
