@@ -125,19 +125,16 @@ export default function Tree({ user }) {
   const roots = people.filter((pp) => !isAnyoneChild(pp.id))
 
   function PersonCard({ pp }) {
+    const firstName = (pp.name || '?').split(/\s+/)[0]
     return (
-      <article className="card person">
+      <article className="card person tree-person">
         {photoUrls[pp.id]
           ? <img src={photoUrls[pp.id]} alt={pp.name} className="avatar" />
           : <div className="avatar placeholder">{pp.name[0]?.toUpperCase()}</div>}
-        <h3>{pp.name}</h3>
-        <p className="muted">
-          {pp.birth_date || '?'}{pp.death_date ? ` — ${pp.death_date}` : ''}
-        </p>
-        {pp.notes && <p className="notes">{pp.notes}</p>}
-        <div className="row">
-          <button className="ghost tiny" onClick={() => startEdit(pp)}>edit</button>
-          <button className="ghost tiny danger" onClick={() => handleDelete(pp)}>delete</button>
+        <h3>{firstName}</h3>
+        <div className="row tree-actions">
+          <button className="ghost tiny" title={`Edit ${pp.name}`} onClick={() => startEdit(pp)}>✎</button>
+          <button className="ghost tiny danger" title={`Delete ${pp.name}`} onClick={() => handleDelete(pp)}>✕</button>
         </div>
       </article>
     )
