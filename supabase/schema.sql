@@ -4,7 +4,7 @@
 -- Convention: diff-before-apply; this file is the source of truth.
 
 -- 1) Relationship type enum
-create type relationship_type as enum ('parent', 'spouse', 'sibling', 'child');
+create type relationship_type as enum ('parent', 'spouse', 'sibling', 'child', 'aunt', 'uncle');
 
 -- 2) Core tables
 create table public.people (

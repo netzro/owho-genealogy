@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const REL_LABELS = { parent: 'parent of', spouse: 'spouse of', sibling: 'sibling of', child: 'child of' }
+const REL_LABELS = { parent: 'parent of', spouse: 'spouse of', sibling: 'sibling of', child: 'child of', aunt: 'aunt of', uncle: 'uncle of' }
 
 const EMPTY_FORM = { name: '', birth_date: '', death_date: '', notes: '', photo: null }
+
+const MAX_DEPTH = 10
 
 export default function Tree({ user }) {
   const [people, setPeople] = useState([])
@@ -101,6 +103,70 @@ export default function Tree({ user }) {
 
   const nameOf = (id) => people.find((pp) => pp.id === id)?.name || '?'
 
+  // ---- tree derivation (read-only over current data) ----
+  // parent edge: person_id is parent of related_person_id (from 'parent' row)
+  //              related_person_id is parent of person_id (from 'child' row)
+  const parentOf = (pid) =>
+    rels.filter((r) =>
+      (r.relationship_type === 'parent' && r.person_id === pid) ||
+      (r.relationship_type === 'child' && r.related_person_id === pid)
+    ).map((r) => (r.relationship_type === 'parent' ? r.related_person_id : r.person_id))
+
+  const spousesOf = (pid) =>
+    rels.filter((r) => r.relationship_type === 'spouse' &&
+      (r.person_id === pid || r.related_person_id === pid)
+    ).map((r) => (r.person_id === pid ? r.related_person_id : r.person_id))
+
+  const isAnyoneChild = (pid) => rels.some((r) =>
+    (r.relationship_type === 'parent' && r.related_person_id === pid) ||
+    (r.relationship_type === 'child' && r.person_id === pid)
+  )
+
+  const roots = people.filter((pp) => !isAnyoneChild(pp.id))
+
+  function PersonCard({ pp }) {
+    return (
+      <article className="card person">
+        {photoUrls[pp.id]
+          ? <img src={photoUrls[pp.id]} alt={pp.name} className="avatar" />
+          : <div className="avatar placeholder">{pp.name[0]?.toUpperCase()}</div>}
+        <h3>{pp.name}</h3>
+        <p className="muted">
+          {pp.birth_date || '?'}{pp.death_date ? ` — ${pp.death_date}` : ''}
+        </p>
+        {pp.notes && <p className="notes">{pp.notes}</p>}
+        <div className="row">
+          <button className="ghost tiny" onClick={() => startEdit(pp)}>edit</button>
+          <button className="ghost tiny danger" onClick={() => handleDelete(pp)}>delete</button>
+        </div>
+      </article>
+    )
+  }
+
+  function TreeNode({ pid, depth }) {
+    const pp = people.find((x) => x.id === pid)
+    if (!pp) return null
+    if (depth >= MAX_DEPTH) return <div className="muted tree-trunc">… (cycle guard)</div>
+    const spouses = spousesOf(pid)
+    const kids = parentOf(pid)
+    return (
+      <div className="treenode">
+        <div className="tree-row">
+          {spouses.map((sid) => {
+            const sp = people.find((x) => x.id === sid)
+            return sp ? <PersonCard key={sid} pp={sp} /> : null
+          })}
+          <PersonCard pp={pp} />
+        </div>
+        {kids.length > 0 && (
+          <div className="tree-children">
+            {kids.map((kid) => <TreeNode key={kid} pid={kid} depth={depth + 1} />)}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="wrap">
       <header>
@@ -169,24 +235,13 @@ export default function Tree({ user }) {
         </div>
       </section>
 
-      <section className="people">
-        {people.map((pp) => (
-          <article key={pp.id} className="card person">
-            {photoUrls[pp.id]
-              ? <img src={photoUrls[pp.id]} alt={pp.name} className="avatar" />
-              : <div className="avatar placeholder">{pp.name[0]?.toUpperCase()}</div>}
-            <h3>{pp.name}</h3>
-            <p className="muted">
-              {pp.birth_date || '?'}{pp.death_date ? ` — ${pp.death_date}` : ''}
-            </p>
-            {pp.notes && <p className="notes">{pp.notes}</p>}
-            <div className="row">
-              <button className="ghost tiny" onClick={() => startEdit(pp)}>edit</button>
-              <button className="ghost tiny danger" onClick={() => handleDelete(pp)}>delete</button>
+      <section className="people-tree">
+        <h2>Family tree</h2>
+        {roots.length > 0
+          ? <div className="tree">
+              {roots.map((pp) => <TreeNode key={pp.id} pid={pp.id} depth={0} />)}
             </div>
-          </article>
-        ))}
-        {!people.length && <p className="muted">No people yet — add the first family member above.</p>}
+          : <p className="muted">{people.length ? 'No roots found — link someone as a child to build the tree.' : 'No people yet — add the first family member above.'}</p>}
       </section>
     </div>
   )

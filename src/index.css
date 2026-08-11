@@ -19,9 +19,33 @@ header .ghost { margin-left: auto; }
   padding: 1rem 1.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin: 1.25rem 0; }
-.people { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.9rem; }
-.person { text-align: center; }
-.person h3 { margin: 0.5rem 0 0.15rem; }
+.people-tree { margin-top: 1.5rem; }
+.people-tree h2 { font-size: 1.1rem; margin: 1.25rem 0 0.5rem; }
+
+/* family tree */
+.tree { display: flex; flex-direction: column; gap: 0.5rem; }
+.treenode { display: flex; flex-direction: column; }
+.tree-row {
+  display: flex; gap: 0.75rem; align-items: flex-start; flex-wrap: wrap;
+  position: relative; padding: 0.5rem;
+}
+.tree-row .person { min-width: 9.5rem; }
+.tree-children {
+  position: relative; margin-left: 2.2rem; padding-left: 1.4rem;
+  border-left: 2px solid #d9c9a9; display: flex; flex-direction: column; gap: 0.5rem;
+}
+.tree-children::before {
+  content: ''; position: absolute; top: -0.25rem; left: 0;
+  width: 1.4rem; height: 1.6rem; border-left: 2px solid #d9c9a9;
+  border-bottom: 2px solid #d9c9a9; border-bottom-left-radius: 8px;
+}
+.tree-children .treenode:first-child { margin-top: 0.75rem; }
+.tree-children .treenode { position: relative; }
+.tree-children .treenode::before {
+  content: ''; position: absolute; top: 50%; left: -1.4rem;
+  width: 1.4rem; height: 2px; background: #d9c9a9;
+}
+.tree-trunc { font-size: 0.8rem; margin-left: 2.2rem; padding: 0.25rem 0.75rem; }
 
 .avatar { width: 5rem; height: 5rem; border-radius: 50%; object-fit: cover; margin: 0 auto; display: block; }
 .avatar.placeholder {
