@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import PersonActionSheet from './PersonActionSheet'
+import ConfirmDialog from './ConfirmDialog'
+import SearchableSelect from './SearchableSelect'
+import CollapsibleSection from './CollapsibleSection'
 
 const REL_LABELS = { parent: 'parent of', spouse: 'spouse of', sibling: 'sibling of', child: 'child of', aunt: 'aunt of', uncle: 'uncle of' }
 
@@ -16,6 +20,9 @@ export default function Tree({ user }) {
   const [photoUrls, setPhotoUrls] = useState({})
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
+  const [actionSheetFor, setActionSheetFor] = useState(null)
+  const [confirmFor, setConfirmFor] = useState(null)
+  const [showAllLinks, setShowAllLinks] = useState(false)
 
   const load = useCallback(async () => {
     const { data: p } = await supabase.from('people').select('*').order('name')
@@ -95,8 +102,14 @@ export default function Tree({ user }) {
     })
   }
 
-  async function handleDelete(pp) {
-    if (!window.confirm(`Delete ${pp.name}? Relationships attached will go too.`)) return
+  function requestDelete(pp) {
+    setActionSheetFor(null)
+    setConfirmFor(pp)
+  }
+  async function doDelete() {
+    const pp = confirmFor
+    setConfirmFor(null)
+    if (!pp) return
     const { error } = await supabase.from('people').delete().eq('id', pp.id)
     if (error) { setMsg(error.message); return }
     await load()
@@ -157,15 +170,13 @@ export default function Tree({ user }) {
   function PersonCard({ pp }) {
     const firstName = (pp.name || '?').split(/\s+/)[0]
     return (
-      <article className="card person tree-person">
+      <article className="card person tree-person" role="button" tabIndex={0}
+        onClick={() => setActionSheetFor(pp)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActionSheetFor(pp) } }}>
         {photoUrls[pp.id]
           ? <img src={photoUrls[pp.id]} alt={pp.name} className="avatar" />
           : <div className="avatar placeholder">{pp.name[0]?.toUpperCase()}</div>}
         <h3>{firstName}</h3>
-        <div className="row tree-actions">
-          <button className="ghost tiny" title={`Edit ${pp.name}`} onClick={() => startEdit(pp)}>✎</button>
-          <button className="ghost tiny danger" title={`Delete ${pp.name}`} onClick={() => handleDelete(pp)}>✕</button>
-        </div>
       </article>
     )
   }
@@ -208,9 +219,20 @@ export default function Tree({ user }) {
 
       {msg && <p className="toast">{msg}</p>}
 
-      <section className="grid">
-        <div className="card">
-          <h2>{editingId ? 'Edit person' : 'Add a person'}</h2>
+      <section className="people-tree">
+        <h2>Family tree</h2>
+        {roots.length > 0
+          ? <div className="tree-scroll">
+              <ul className="tree">
+                {roots.map((pp) => <TreeNode key={pp.id} pid={pp.id} depth={0} />)}
+              </ul>
+            </div>
+          : <p className="muted">{people.length ? 'No roots found — link someone as a child to build the tree.' : 'No people yet — add the first family member above.'}</p>}
+      </section>
+
+      <h2 className="manage-head">Manage family</h2>
+      <section className="manage">
+        <CollapsibleSection title={editingId ? 'Edit person' : 'Add a person'} defaultOpen={false}>
           <form onSubmit={handleSave} className="stack">
             <input placeholder="Full name *" value={form.name} required
               onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -232,50 +254,62 @@ export default function Tree({ user }) {
             }}>Cancel edit</button>}
             <button type="submit" disabled={busy}>{busy ? 'Working…' : editingId ? 'Save changes' : 'Add person'}</button>
           </form>
-        </div>
+        </CollapsibleSection>
 
-        <div className="card">
-          <h2>Link relatives</h2>
+        <CollapsibleSection title="Link relatives" defaultOpen={false}>
           <form onSubmit={handleLink} className="stack">
-            <select value={link.person_id} onChange={(e) => setLink({ ...link, person_id: e.target.value })}>
-              <option value="">— person —</option>
-              {people.filter((pp) => pp.id !== link.related_person_id).map((pp) =>
-                <option key={pp.id} value={pp.id}>{pp.name}</option>)}
-            </select>
+            <SearchableSelect
+              people={people}
+              excludeId={link.related_person_id}
+              value={link.person_id}
+              onChange={(id) => setLink({ ...link, person_id: id })}
+              placeholder="— person —"
+            />
             <select value={link.relationship_type} onChange={(e) => setLink({ ...link, relationship_type: e.target.value })}>
               {Object.entries(REL_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
-            <select value={link.related_person_id} onChange={(e) => setLink({ ...link, related_person_id: e.target.value })}>
-              <option value="">— related person —</option>
-              {people.filter((pp) => pp.id !== link.person_id).map((pp) =>
-                <option key={pp.id} value={pp.id}>{pp.name}</option>)}
-            </select>
+            <SearchableSelect
+              people={people}
+              excludeId={link.person_id}
+              value={link.related_person_id}
+              onChange={(id) => setLink({ ...link, related_person_id: id })}
+              placeholder="— related person —"
+            />
             <button type="submit">Link them</button>
           </form>
 
           <h3>Existing links</h3>
           <ul className="links">
-            {rels.map((r) =>
+            {(showAllLinks ? rels : rels.slice(0, 5)).map((r) =>
               <li key={r.id}>
                 <strong>{nameOf(r.person_id)}</strong> {REL_LABELS[r.relationship_type]}{' '}
                 <strong>{nameOf(r.related_person_id)}</strong>
                 <button className="ghost tiny" onClick={() => handleUnlink(r)}>✕</button>
               </li>)}
             {!rels.length && <li className="muted">No relationships yet.</li>}
+            {rels.length > 5 && !showAllLinks && (
+              <li><button type="button" className="linklike" onClick={() => setShowAllLinks(true)}>
+                Show all ({rels.length})
+              </button></li>
+            )}
           </ul>
-        </div>
+        </CollapsibleSection>
       </section>
 
-      <section className="people-tree">
-        <h2>Family tree</h2>
-        {roots.length > 0
-          ? <div className="tree-scroll">
-              <ul className="tree">
-                {roots.map((pp) => <TreeNode key={pp.id} pid={pp.id} depth={0} />)}
-              </ul>
-            </div>
-          : <p className="muted">{people.length ? 'No roots found — link someone as a child to build the tree.' : 'No people yet — add the first family member above.'}</p>}
-      </section>
+      <PersonActionSheet
+        person={actionSheetFor}
+        onEdit={(pp) => { startEdit(pp); setActionSheetFor(null) }}
+        onDelete={(pp) => requestDelete(pp)}
+        onClose={() => setActionSheetFor(null)}
+      />
+
+      <ConfirmDialog
+        open={!!confirmFor}
+        message={confirmFor ? `Delete ${confirmFor.name}? Relationships attached will go too.` : ''}
+        confirmLabel="Delete"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmFor(null)}
+      />
     </div>
   )
 }
