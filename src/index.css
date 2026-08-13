@@ -22,33 +22,63 @@ header .ghost { margin-left: auto; }
 .people-tree { margin-top: 1.5rem; }
 .people-tree h2 { font-size: 1.1rem; margin: 1.25rem 0 0.5rem; }
 
-/* family tree */
-.tree { display: flex; flex-direction: column; gap: 0.5rem; }
-.treenode { display: flex; flex-direction: column; }
-.tree-row {
-  display: flex; gap: 0.75rem; align-items: flex-start; flex-wrap: wrap;
-  position: relative; padding: 0.5rem;
+/* family tree — pure-CSS top-down org chart (rows = generations) */
+.tree-scroll { overflow-x: auto; padding-bottom: 1rem; }
+
+.tree, .tree ul {
+  display: flex;
+  justify-content: center;
+  padding-top: 1.5rem;
+  position: relative;
 }
-.tree-row .person { min-width: 7.5rem; }
-.tree-person .avatar { width: 4rem; height: 4rem; font-size: 1.5rem; }
-.tree-person h3 { margin: 0.4rem 0 0; font-size: 1rem; }
-.tree-person .tree-actions { justify-content: center; margin-top: 0.35rem; }
-.tree-children {
-  position: relative; margin-left: 2.2rem; padding-left: 1.4rem;
-  border-left: 2px solid #d9c9a9; display: flex; flex-direction: column; gap: 0.5rem;
+.tree { padding-top: 0; }
+.tree ul { padding-top: 1.5rem; }
+
+.tree li {
+  list-style: none;
+  position: relative;
+  padding: 1.5rem 0.6rem 0;
+  text-align: center;
 }
-.tree-children::before {
-  content: ''; position: absolute; top: -0.25rem; left: 0;
-  width: 1.4rem; height: 1.6rem; border-left: 2px solid #d9c9a9;
-  border-bottom: 2px solid #d9c9a9; border-bottom-left-radius: 8px;
+
+.tree li ul::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  width: 0; height: 1.5rem;
+  border-left: 2px solid #d9c9a9;
 }
-.tree-children .treenode:first-child { margin-top: 0.75rem; }
-.tree-children .treenode { position: relative; }
-.tree-children .treenode::before {
-  content: ''; position: absolute; top: 50%; left: -1.4rem;
-  width: 1.4rem; height: 2px; background: #d9c9a9;
+
+.tree li::before, .tree li::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 50%;
+  width: 50%; height: 1.5rem;
+  border-top: 2px solid #d9c9a9;
 }
-.tree-trunc { font-size: 0.8rem; margin-left: 2.2rem; padding: 0.25rem 0.75rem; }
+.tree li::after { right: auto; left: 50%; border-left: 2px solid #d9c9a9; }
+.tree li:only-child::before, .tree li:only-child::after { display: none; }
+.tree li:first-child::before { border: none; }
+.tree li:last-child::after { border: none; }
+.tree li:last-child::before { border-right: 2px solid #d9c9a9; border-radius: 0 6px 0 0; }
+.tree li:first-child::after { border-radius: 6px 0 0 0; }
+.tree > li { padding-top: 0; }
+.tree > li::before, .tree > li::after { display: none; }
+
+.tree-couple {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #e5ddcf;
+  border-radius: 10px;
+  padding: 0.4rem;
+}
+.tree-couple .tree-person { border: none; box-shadow: none; padding: 0.25rem; }
+.tree-person .avatar { width: 3.5rem; height: 3.5rem; font-size: 1.25rem; }
+.tree-person h3 { margin: 0.3rem 0 0; font-size: 0.9rem; white-space: nowrap; }
+.tree-person .tree-actions { justify-content: center; margin-top: 0.3rem; }
+.tree-trunc { font-size: 0.8rem; padding: 0.25rem 0.75rem; list-style: none; }
 
 .avatar { width: 5rem; height: 5rem; border-radius: 50%; object-fit: cover; margin: 0 auto; display: block; }
 .avatar.placeholder {

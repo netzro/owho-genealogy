@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const REL_LABELS = { parent: 'parent of', spouse: 'spouse of', sibling: 'sibling of', child: 'child of', aunt: 'aunt of', uncle: 'uncle of' }
@@ -25,15 +25,32 @@ export default function Tree({ user }) {
   }, [])
 
   // signed URLs for any person with a photo (private bucket)
+  const fetchedPhotoKeys = useRef(new Set())
   useEffect(() => {
-    const withPhoto = people.filter((pp) => pp.photo_url)
-    if (!withPhoto.length) return
-    withPhoto.forEach(async (pp) => {
-      const { data } = await supabase.storage
-        .from('photos')
-        .createSignedUrl(pp.photo_url, 3600)
-      if (data?.signedUrl) setPhotoUrls((prev) => ({ ...prev, [pp.id]: data.signedUrl }))
-    })
+    const missing = people.filter(
+      (pp) => pp.photo_url && !fetchedPhotoKeys.current.has(`${pp.id}:${pp.photo_url}`)
+    )
+    if (!missing.length) return
+    missing.forEach((pp) => fetchedPhotoKeys.current.add(`${pp.id}:${pp.photo_url}`))
+    let cancelled = false
+    ;(async () => {
+      const entries = await Promise.all(
+        missing.map(async (pp) => {
+          const { data, error } = await supabase.storage
+            .from('photos')
+            .createSignedUrl(pp.photo_url, 3600)
+          if (error) console.error('signed url failed for', pp.id, error.message)
+          return [pp.id, data?.signedUrl]
+        })
+      )
+      if (cancelled) return
+      setPhotoUrls((prev) => {
+        const next = { ...prev }
+        for (const [id, url] of entries) if (url) next[id] = url
+        return next
+      })
+    })()
+    return () => { cancelled = true }
   }, [people])
 
   useEffect(() => { load() }, [load])
@@ -122,7 +139,20 @@ export default function Tree({ user }) {
     (r.relationship_type === 'child' && r.person_id === pid)
   )
 
-  const roots = people.filter((pp) => !isAnyoneChild(pp.id))
+  // Roots = people with no recorded parent, deduped by spouse cluster so a
+  // married couple becomes ONE root node instead of two roots each
+  // re-walking the whole shared subtree.
+  const roots = (() => {
+    const seen = new Set()
+    const out = []
+    for (const pp of people) {
+      if (isAnyoneChild(pp.id) || seen.has(pp.id)) continue
+      out.push(pp)
+      seen.add(pp.id)
+      spousesOf(pp.id).forEach((sid) => seen.add(sid))
+    }
+    return out
+  })()
 
   function PersonCard({ pp }) {
     const firstName = (pp.name || '?').split(/\s+/)[0]
@@ -143,24 +173,28 @@ export default function Tree({ user }) {
   function TreeNode({ pid, depth }) {
     const pp = people.find((x) => x.id === pid)
     if (!pp) return null
-    if (depth >= MAX_DEPTH) return <div className="muted tree-trunc">… (cycle guard)</div>
+    if (depth >= MAX_DEPTH) return <li className="muted tree-trunc">… (cycle guard)</li>
     const spouses = spousesOf(pid)
-    const kids = parentOf(pid)
+    // Gather kids from either spouse's parent rows; dedupe.
+    const kids = [...new Set([
+      ...parentOf(pid),
+      ...spouses.flatMap((sid) => parentOf(sid)),
+    ])]
     return (
-      <div className="treenode">
-        <div className="tree-row">
+      <li>
+        <div className="tree-couple">
+          <PersonCard pp={pp} />
           {spouses.map((sid) => {
             const sp = people.find((x) => x.id === sid)
             return sp ? <PersonCard key={sid} pp={sp} /> : null
           })}
-          <PersonCard pp={pp} />
         </div>
         {kids.length > 0 && (
-          <div className="tree-children">
+          <ul>
             {kids.map((kid) => <TreeNode key={kid} pid={kid} depth={depth + 1} />)}
-          </div>
+          </ul>
         )}
-      </div>
+      </li>
     )
   }
 
@@ -235,8 +269,10 @@ export default function Tree({ user }) {
       <section className="people-tree">
         <h2>Family tree</h2>
         {roots.length > 0
-          ? <div className="tree">
-              {roots.map((pp) => <TreeNode key={pp.id} pid={pp.id} depth={0} />)}
+          ? <div className="tree-scroll">
+              <ul className="tree">
+                {roots.map((pp) => <TreeNode key={pp.id} pid={pp.id} depth={0} />)}
+              </ul>
             </div>
           : <p className="muted">{people.length ? 'No roots found — link someone as a child to build the tree.' : 'No people yet — add the first family member above.'}</p>}
       </section>
