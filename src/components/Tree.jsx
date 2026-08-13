@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { supabase } from '../lib/supabase'
 import PersonActionSheet from './PersonActionSheet'
 import ConfirmDialog from './ConfirmDialog'
 import SearchableSelect from './SearchableSelect'
 import CollapsibleSection from './CollapsibleSection'
+import SummaryBar from './SummaryBar'
+import Toast from './Toast'
 
 const REL_LABELS = { parent: 'parent of', spouse: 'spouse of', sibling: 'sibling of', child: 'child of', aunt: 'aunt of', uncle: 'uncle of' }
 
@@ -217,16 +220,32 @@ export default function Tree({ user }) {
         <button className="ghost" onClick={() => supabase.auth.signOut()}>Sign out</button>
       </header>
 
-      {msg && <p className="toast">{msg}</p>}
+      <SummaryBar people={people} rels={rels} />
+
+      <Toast message={msg} onDismiss={() => setMsg('')} />
 
       <section className="people-tree">
         <h2>Family tree</h2>
         {roots.length > 0
-          ? <div className="tree-scroll">
-              <ul className="tree">
-                {roots.map((pp) => <TreeNode key={pp.id} pid={pp.id} depth={0} />)}
-              </ul>
-            </div>
+          ? <TransformWrapper minScale={0.5} maxScale={2.5} initialScale={1} doubleClick={{ disabled: true }}>
+              {({ zoomIn, zoomOut, resetTransform }) => (
+                <>
+                  <div className="tree-zoom-controls">
+                    <button className="ghost tiny" onClick={() => zoomIn()} aria-label="Zoom in">+</button>
+                    <button className="ghost tiny" onClick={() => zoomOut()} aria-label="Zoom out">−</button>
+                    <button className="ghost tiny" onClick={() => resetTransform()}>reset</button>
+                  </div>
+                  <TransformComponent
+                    wrapperClass="tree-scroll"
+                    wrapperStyle={{ width: '100%', overflow: 'hidden', position: 'relative' }}
+                    contentClass="tree-zoom-content">
+                    <ul className="tree">
+                      {roots.map((pp) => <TreeNode key={pp.id} pid={pp.id} depth={0} />)}
+                    </ul>
+                  </TransformComponent>
+                </>
+              )}
+            </TransformWrapper>
           : <p className="muted">{people.length ? 'No roots found — link someone as a child to build the tree.' : 'No people yet — add the first family member above.'}</p>}
       </section>
 

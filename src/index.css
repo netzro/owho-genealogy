@@ -28,39 +28,44 @@
   --sheet-btn-danger-text: #b3261e;
   --sheet-btn-ghost-text: #7a6f5c;
   --linklike: #3f6f52;
+  --gold: #c9a24b;
+  --gold-text: #f0dfae;
   --backdrop: rgba(0, 0, 0, 0.4);
   --shadow-soft: rgba(0, 0, 0, 0.05);
   --shadow-modal: rgba(0, 0, 0, 0.2);
   --shadow-combo: rgba(0, 0, 0, 0.12);
 }
 
+/* dark = warm light-brown / sepia (recolor of the prior near-black scheme) */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1c1812;
-    --fg: #ece6da;
-    --muted: #a99b85;
-    --card-bg: #2a241c;
-    --card-border: #3a3328;
-    --line: #4a4031;
-    --accent: #5fae84;
-    --accent-fg: #11201a;
-    --danger: #f08a7e;
-    --input-border: #4a4031;
-    --field-bg: #2a241c;
-    --chip-bg: #4a4031;
-    --chip-fg: #c9b68c;
-    --toast-bg: #26301f;
-    --toast-border: #3a5236;
-    --ghost-border: #4a4031;
-    --file-label: #a99b85;
-    --combo-hover: #26301f;
-    --sheet-btn-bg: #26301f;
-    --sheet-btn-text: #ece6da;
-    --sheet-btn-danger-bg: #3a201d;
-    --sheet-btn-danger-text: #f08a7e;
-    --sheet-btn-ghost-text: #a99b85;
-    --linklike: #5fae84;
-    --backdrop: rgba(0, 0, 0, 0.6);
+    --bg: #2a2115;
+    --fg: #ece0c8;
+    --muted: #b8a67e;
+    --card-bg: #3a2f1e;
+    --card-border: #55442a;
+    --line: #6b573a;
+    --accent: #6fae86;
+    --accent-fg: #10261b;
+    --danger: #e0665c;
+    --input-border: #55442a;
+    --field-bg: #3a2f1e;
+    --chip-bg: #4a3a24;
+    --chip-fg: #e0cfa6;
+    --toast-bg: #33361f;
+    --toast-border: #4a4d2e;
+    --ghost-border: #55442a;
+    --file-label: #b8a67e;
+    --combo-hover: #33361f;
+    --sheet-btn-bg: #33361f;
+    --sheet-btn-text: #ece0c8;
+    --sheet-btn-danger-bg: #4a2420;
+    --sheet-btn-danger-text: #e0665c;
+    --sheet-btn-ghost-text: #b8a67e;
+    --linklike: #6fae86;
+    --gold: #c9a24b;
+    --gold-text: #f0dfae;
+    --backdrop: rgba(18, 12, 5, 0.6);
     --shadow-soft: rgba(0, 0, 0, 0.4);
     --shadow-modal: rgba(0, 0, 0, 0.6);
     --shadow-combo: rgba(0, 0, 0, 0.5);
@@ -84,10 +89,16 @@ header .ghost { margin-left: auto; }
 .people-tree { margin-top: 1.5rem; }
 .people-tree h2 { font-size: 1.1rem; margin: 1.25rem 0 0.5rem; }
 
+/* summary stat bar */
+.summary-bar { display: flex; flex-wrap: wrap; gap: 0.75rem 1.75rem; margin: 0.75rem 0 0; }
+.summary-bar .stat { display: flex; flex-direction: column; }
+.stat-value { font-size: 1.35rem; font-weight: 700; line-height: 1.1; }
+.stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
 /* family tree — pure-CSS top-down org chart (rows = generations) */
 .tree, .tree ul {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   padding-top: 1.5rem;
   position: relative;
 }
@@ -125,7 +136,9 @@ header .ghost { margin-left: auto; }
 .tree > li { padding-top: 0; }
 .tree > li::before, .tree > li::after { display: none; }
 
-.tree-scroll { overflow-x: auto; padding-bottom: 1rem; -webkit-overflow-scrolling: touch; }
+/* scroll/pinch-pan wrapper (TransformComponent applies this class) */
+.tree-scroll { width: 100%; overflow-x: auto; padding: 0 1.5rem 1rem; -webkit-overflow-scrolling: touch; }
+.tree-zoom-content { padding-top: 1.5rem; }
 
 .tree-couple {
   display: inline-flex;
@@ -149,7 +162,19 @@ header .ghost { margin-left: auto; }
 
 .notes, .muted { color: var(--muted); font-size: 0.9rem; }
 .error { color: var(--danger); }
-.toast { background: var(--toast-bg); border: 1px solid var(--toast-border); border-radius: 8px; padding: 0.5rem 0.9rem; }
+
+/* fixed top-center toast overlay (replaces the old inline .toast) */
+.toast-fixed {
+  position: fixed; top: 1rem; left: 50%; z-index: 1000;
+  transform: translateX(-50%) translateY(-8px);
+  background: var(--toast-bg); border: 1px solid var(--toast-border);
+  border-radius: 8px; padding: 0.6rem 0.9rem;
+  display: flex; align-items: center; gap: 0.6rem;
+  max-width: 90vw; box-shadow: 0 6px 20px var(--shadow-combo);
+  opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.toast-fixed.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast-x { background: transparent; border: none; color: inherit; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 0.2rem; min-height: 0; }
 
 .stack { display: grid; gap: 0.6rem; }
 .row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
@@ -167,6 +192,15 @@ button.ghost { background: transparent; color: var(--linklike); border-color: va
 button.tiny { padding: 0.15rem 0.5rem; font-size: 0.8rem; min-height: 0; }
 button.danger { color: var(--danger); }
 .file { font-size: 0.85rem; color: var(--file-label); }
+
+/* zoom controls — sticky top-right of the tree section, semi-transparent */
+.tree-zoom-controls {
+  position: sticky; top: 0.5rem; float: right; z-index: 5;
+  display: flex; gap: 0.35rem; margin: 0 0 0.5rem;
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: 8px; padding: 0.2rem; opacity: 0.85;
+}
+.tree-zoom-controls button { min-height: 0; padding: 0.3rem 0.7rem; font-size: 0.9rem; }
 
 /* bottom action sheet */
 .sheet-backdrop {
@@ -239,4 +273,5 @@ button.danger { color: var(--danger); }
   .people-tree h2 { font-size: 1rem; }
   .manage-head { font-size: 1.1rem; }
   .tree-person h3 { white-space: normal; }
+  .summary-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem 1rem; }
 }
